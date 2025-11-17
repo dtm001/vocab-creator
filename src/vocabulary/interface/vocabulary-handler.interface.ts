@@ -1,5 +1,5 @@
-import { VocabularyType } from 'src/common/enum/vocabulary-type.enum';
-import { VocabularyData } from 'src/common/interface/vocabulary-data.interface';
+import { VocabularyType } from '../../common/enum/vocabulary-type.enum';
+import { VocabularyData } from '../../common/interface/vocabulary-data.interface';
 
 /**
  * Interface for vocabulary handlers that process different types of German words

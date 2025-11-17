@@ -1,7 +1,4 @@
-import {
-  VerbData,
-  NounData,
-} from '../../common/interface/vocabulary-data.interface';
+import { VocabularyData } from '../../common/interface/vocabulary-data.interface';
 
 /**
  * Response DTO for a single processed entry
@@ -11,7 +8,9 @@ export class ProcessedEntryDto {
   type: string;
   rowNumber?: number;
   success: boolean;
-  data?: VerbData | NounData;
+  skipped?: boolean;
+  reason?: string;
+  data?: VocabularyData;
   error?: string;
 }
 
@@ -25,6 +24,7 @@ export class ProcessResponseDto {
     totalRows: number;
     successCount: number;
     failureCount: number;
+    skippedCount: number;
     processingTimeMs: number;
   };
   results: ProcessedEntryDto[];

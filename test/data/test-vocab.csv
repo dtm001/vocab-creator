@@ -1,4 +1,7 @@
 type,word
 verb,laufen
-noun,Haus
 verb,essen
+noun,Haus
+noun,Katze
+verb,trinken
+verb,abnehmen

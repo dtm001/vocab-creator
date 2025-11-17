@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { createReadStream } from 'fs';
 import { access, constants } from 'fs/promises';
-import * as csv from 'csv-parser';
+import csv from 'csv-parser';
 import { VocabularyEntryDto } from '../common/dto/vocabulary-entry.dto';
 import { VocabularyType } from '../common/enum/vocabulary-type.enum';
 import { CsvParseException } from './exception/csv-parse.exception';

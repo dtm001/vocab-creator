@@ -14,69 +14,29 @@ export class NounHandler extends VocabularyBaseHandler {
     super(httpClientService);
   }
 
-  /**
-   * Determines if this handler can process the given vocabulary type
-   * @param type - The vocabulary type to check
-   * @returns true if type is NOUN
-   */
   canHandle(type: VocabularyType): boolean {
     return type === VocabularyType.NOUN;
   }
 
-  /**
-   * Processes a German noun by fetching HTML and parsing it
-   * @param word - The German noun to process
-   * @returns Promise resolving to structured noun data
-   */
-  async process(word: string): Promise<NounData> {
-    this.logger.log(`Processing noun: ${word}`);
-
-    try {
-      // Fetch HTML from dictionary website
-      const html = await this.httpClientService.fetchWordHtml(word);
-
-      // Parse the HTML response
-      const nounData = this.parseHtmlResponse(html);
-
-      this.logger.log(`Successfully processed noun: ${word}`);
-      return nounData;
-    } catch (error) {
-      this.logger.error(
-        `Error processing noun '${word}': ${error.message}`,
-        error.stack,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Parses HTML response to extract noun-specific data
-   * TODO: Implement HTML parsing logic
-   * @param html - Raw HTML from dictionary website
-   * @returns Structured noun data
-   */
   parseHtmlResponse(html: string): NounData {
-    this.logger.log('Parsing HTML for noun (stubbed implementation)');
+    this.logger.log('Parsing HTML for noun');
 
     const $ = cheerio.load(html);
 
-    // Extract the infinitive form (word)
-    const infinitive = this.extractInfinitive($);
-
-    // const stemForms = this.extractStemFormsFromTables($);
-
-    // Extract translation
-    const translation = this.extractTranslation($);
-
-    // Extract example sentence
-    const example = this.extractExample($);
-
+    const fullWord = this.extractFullWord($);
     const plural = this.extractPlural($);
+    const translation = this.extractTranslation($); // Using base class method
+    const example = this.extractExample($); // Using base class method
+
+    // Split article from word (e.g., "das Haus" -> article: "das", word: "Haus")
+    const parts = fullWord.split(' ');
+    const article = parts.length > 1 ? parts[0] : 'article not found';
+    const word = parts.length > 1 ? parts.slice(1).join(' ') : fullWord;
 
     const nounData: NounData = {
-      word: infinitive,
+      word: word,
       type: VocabularyType.NOUN,
-      article: infinitive.split(' ')[0],
+      article: article,
       plural: plural,
       translation: translation,
       example: example,
@@ -85,22 +45,7 @@ export class NounHandler extends VocabularyBaseHandler {
     return nounData;
   }
 
-  extractPlural($: cheerio.CheerioAPI): string {
-    const paragraph = $('p.vStm.rCntr').first().text();
-    if (!paragraph) {
-      return 'plural not found';
-    }
-
-    // remove any "\n" characters
-    return paragraph.replace(/\n/g, ' ').trim();
-  }
-
-  /**
-   * Extracts the infinitive form from the HTML
-   */
-  extractInfinitive($: cheerio.CheerioAPI): string {
-    // Look for the grundform (infinitive) - id="grundform"
-    // const grundform = $('#grundform').text().trim();
+  private extractFullWord($: cheerio.CheerioAPI): string {
     const span = $('span.vGrnd').first().text().trim();
 
     if (span) {
@@ -109,7 +54,18 @@ export class NounHandler extends VocabularyBaseHandler {
 
     // Fallback: try to get from h1
     const h1Text = $('h1').first().text();
-    const match = h1Text.match(/laufen|(\w+)/);
+    const match = h1Text.match(/\w+/);
     return match ? match[0] : 'unknown';
+  }
+
+  private extractPlural($: cheerio.CheerioAPI): string {
+    const paragraph = $('p.vStm.rCntr').first().text();
+
+    if (!paragraph) {
+      return 'plural not found';
+    }
+
+    // Clean up whitespace and newlines
+    return paragraph.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
   }
 }
