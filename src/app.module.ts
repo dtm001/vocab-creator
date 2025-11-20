@@ -6,6 +6,8 @@ import { VocabularyModule } from './vocabulary/vocabulary.module';
 import { FlashcardModule } from './flashcard/flashcard.module';
 import { DatabaseModule } from './database/database.module';
 import { DatabaseServicesModule } from './database/database-services.module';
+import { ProvidersModule } from './providers/provider.module';
+import { ContextModule } from './context/context.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { DatabaseServicesModule } from './database/database-services.module';
     FlashcardModule,
     DatabaseModule,
     DatabaseServicesModule,
+    ProvidersModule,
+    ContextModule,
   ],
   controllers: [AppController],
   providers: [AppService],

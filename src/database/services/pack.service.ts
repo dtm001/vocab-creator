@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DatabaseService } from '../database.service';
 import { packs, NewPack, Pack } from '../schema';
+import { ProviderClass } from 'src/providers/interfaces/flashcard-provider.interface';
 
 /**
  * Service for managing Pack entities
@@ -15,9 +16,10 @@ export class PackService {
    * @param name - Name of the pack
    * @returns Created pack
    */
-  async create(name: string): Promise<Pack> {
+  async create(packDetails: ProviderClass): Promise<Pack> {
     const newPack: NewPack = {
-      name,
+      name: packDetails.name,
+      id: packDetails.id,
     };
 
     const result = await this.databaseService.db

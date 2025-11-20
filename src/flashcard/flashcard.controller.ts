@@ -38,9 +38,17 @@ export class FlashcardController {
   @Get('process/:csvLocation(*)')
   async processFlashcards(
     @Param('csvLocation') csvLocation: string,
+    @Query('packId') packId: string,
     @Query('deckId') deckId: string,
   ): Promise<ProcessResponseDto> {
     this.logger.log(`Received request to process CSV: ${csvLocation}`);
+
+    if (!packId) {
+      throw new HttpException(
+        'packId query parameter is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (!deckId) {
       throw new HttpException(
@@ -50,6 +58,15 @@ export class FlashcardController {
     }
 
     try {
+      // Validate deck exists
+      const pack = await this.packService.findById(packId);
+      if (!pack) {
+        throw new HttpException(
+          `Deck with ID ${packId} not found`,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
       // Validate deck exists
       const deck = await this.deckService.findById(deckId);
       if (!deck) {
@@ -65,6 +82,7 @@ export class FlashcardController {
       // Process the file
       const summary = await this.flashcardProcessingService.processFile(
         sanitizedPath,
+        packId,
         deckId,
       );
 

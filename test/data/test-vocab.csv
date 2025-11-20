@@ -1,7 +1,8 @@
-type,word
-verb,laufen
-verb,essen
-noun,Haus
-noun,Katze
-verb,trinken
-verb,abnehmen
+word
+laufen
+essen
+Haus
+Katze
+trinken
+abnehmen
+groß

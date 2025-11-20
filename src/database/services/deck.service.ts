@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import { DatabaseService } from '../database.service';
 import { decks, NewDeck, Deck } from '../schema';
+import { ProviderDeck } from 'src/providers/interfaces/flashcard-provider.interface';
 
 /**
  * Service for managing Deck entities
@@ -17,15 +18,12 @@ export class DeckService {
    * @param description - Optional description
    * @returns Created deck
    */
-  async create(
-    name: string,
-    packId: string,
-    description?: string,
-  ): Promise<Deck> {
+  async create(providerResponse: ProviderDeck): Promise<Deck> {
     const newDeck: NewDeck = {
-      name,
-      packId,
-      description: description || null,
+      id: providerResponse.id,
+      name: providerResponse.name,
+      packId: providerResponse.classId,
+      description: providerResponse.description || null,
     };
 
     const result = await this.databaseService.db

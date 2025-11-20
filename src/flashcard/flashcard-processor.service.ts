@@ -5,6 +5,12 @@ import { VocabularyData } from '../common/interface/vocabulary-data.interface';
 import { VocabularyEntryDto } from '../common/dto/vocabulary-entry.dto';
 import { CardService } from '../database/services/card.service';
 import { VocabularyToCardMapper } from '../mappers/vocabulary-to-card.mapper';
+import { ContextService } from '../context/context.service';
+import { ProviderFactory } from '../providers/provider.factory';
+import { IFlashcardProvider } from '../providers/interfaces/flashcard-provider.interface';
+import { VocabularyTypeService } from '../vocabulary/vocabulary-type.service';
+import { HttpClientService } from '../vocabulary/http-client.service';
+import { VocabularyType } from '../common/enum/vocabulary-type.enum';
 
 /**
  * Result of processing a single vocabulary entry
@@ -36,12 +42,17 @@ export interface ProcessingSummary {
 @Injectable()
 export class FlashcardProcessingService {
   private readonly logger = new Logger(FlashcardProcessingService.name);
+  private selectedProvider: IFlashcardProvider | null = null;
 
   constructor(
     private readonly csvService: CsvService,
+    private readonly httpClientService: HttpClientService,
     private readonly handlerFactory: VocabularyHandlerFactory,
     private readonly cardService: CardService,
     private readonly vocabularyMapper: VocabularyToCardMapper,
+    private readonly contextService: ContextService,
+    private readonly providerFactory: ProviderFactory,
+    private readonly typeService: VocabularyTypeService,
   ) {}
 
   /**
@@ -52,6 +63,7 @@ export class FlashcardProcessingService {
    */
   async processFile(
     csvPath: string,
+    packId: string,
     deckId: string,
   ): Promise<ProcessingSummary> {
     const startTime = Date.now();
@@ -85,7 +97,7 @@ export class FlashcardProcessingService {
         continue;
       }
 
-      const result = await this.processEntry(entry, deckId);
+      const result = await this.processEntry(entry, packId, deckId);
       results.push(result);
 
       if (result.success && !result.skipped) {
@@ -126,22 +138,37 @@ export class FlashcardProcessingService {
    */
   private async processEntry(
     entry: VocabularyEntryDto,
+    packId: string,
     deckId: string,
   ): Promise<ProcessingResult> {
     this.logger.debug(`Processing entry: ${entry.word} (${entry.type})`);
 
     try {
+      const html = await this.httpClientService.fetchWordHtml(entry.word);
+      // determine type
+      const wordType =
+        entry.type !== VocabularyType.UNSET
+          ? entry.type
+          : this.typeService.determineWordType(html);
+
       // Get appropriate handler for this vocabulary type
-      const handler = this.handlerFactory.getHandler(entry.type);
+      const handler = this.handlerFactory.getHandler(wordType);
 
       // Process the word (fetch HTML and parse)
-      const data = await handler.process(entry.word);
+      const data = await handler.process(entry.word, html);
 
       // Map vocabulary data to card format
       const cardData = this.vocabularyMapper.mapToCard(data, deckId);
 
       // Save card to database
-      await this.cardService.create(cardData);
+      const providerType = this.contextService.get('provider') as string;
+      this.selectedProvider = this.providerFactory.getProvider(providerType);
+      const providerCard = await this.selectedProvider.createCard(
+        packId,
+        deckId,
+        cardData,
+      );
+      await this.cardService.create({ ...cardData, id: providerCard.id });
 
       this.logger.log(`Successfully saved card: ${entry.word}`);
 
@@ -173,6 +200,7 @@ export class FlashcardProcessingService {
    */
   private async processBatch(
     entries: VocabularyEntryDto[],
+    packId: string,
     deckId: string,
     batchSize: number = 5,
   ): Promise<ProcessingResult[]> {
@@ -181,7 +209,7 @@ export class FlashcardProcessingService {
     for (let i = 0; i < entries.length; i += batchSize) {
       const batch = entries.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((entry) => this.processEntry(entry, deckId)),
+        batch.map((entry) => this.processEntry(entry, packId, deckId)),
       );
       results.push(...batchResults);
     }

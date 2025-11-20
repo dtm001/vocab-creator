@@ -18,7 +18,7 @@ export interface IVocabularyHandler {
    * @param word - The German word to process
    * @returns Promise resolving to structured vocabulary data
    */
-  process(word: string): Promise<VocabularyData>;
+  process(word: string, html: string): Promise<VocabularyData>;
 
   /**
    * Parses HTML response from the dictionary website

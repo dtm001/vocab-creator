@@ -170,7 +170,29 @@ export class CardService {
       .from(cards)
       .where(eq(cards.deckId, deckId));
 
-    return new Set(result.map((card) => card.name));
+    return new Set(result.map((card) => this.cleanGermanText(card.name)));
+  }
+
+  cleanGermanText(text) {
+    /**
+     * Removes non-German characters from a string
+     * Keeps: a-z, A-Z, German umlauts (ä, ö, ü, Ä, Ö, Ü), ß, spaces, and hyphens
+     * @param {string} text - The text to clean
+     * @returns {string} - The cleaned text
+     */
+
+    if (!text) {
+      return '';
+    }
+
+    // Regular expression that matches valid German characters
+    // Includes: a-z, A-Z, umlauts (äöüÄÖÜ), ß, spaces, and hyphens
+    const germanCharPattern = /[a-zA-ZäöüÄÖÜß\s-]/g;
+
+    // Extract only the valid characters
+    const matches = text.match(germanCharPattern);
+
+    return matches ? matches.join('') : '';
   }
 
   /**

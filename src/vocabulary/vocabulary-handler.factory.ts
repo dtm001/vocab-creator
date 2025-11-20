@@ -3,6 +3,8 @@ import { VocabularyType } from '../common/enum/vocabulary-type.enum';
 import { IVocabularyHandler } from './interface/vocabulary-handler.interface';
 import { VerbHandler } from './verb.handler';
 import { NounHandler } from './noun.handler';
+import { AdjectiveHandler } from './adjective.handler';
+import { DefaultHandler } from './default.handler';
 
 /**
  * Factory for selecting the appropriate vocabulary handler based on type
@@ -15,9 +17,16 @@ export class VocabularyHandlerFactory {
   constructor(
     private readonly verbHandler: VerbHandler,
     private readonly nounHandler: NounHandler,
+    private readonly adjectiveHandler: AdjectiveHandler,
+    private readonly defaultHandler: DefaultHandler,
   ) {
     // Register all available handlers
-    this.handlers = [this.verbHandler, this.nounHandler];
+    this.handlers = [
+      this.verbHandler,
+      this.nounHandler,
+      this.adjectiveHandler,
+      this.defaultHandler,
+    ];
   }
 
   /**

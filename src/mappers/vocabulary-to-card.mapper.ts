@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { VocabularyType } from '../common/enum/vocabulary-type.enum';
 import {
+  AdjectiveData,
   NounData,
   VerbData,
   VocabularyData,
@@ -23,6 +24,8 @@ export class VocabularyToCardMapper {
       return this.mapVerbToCard(vocabularyData as VerbData, deckId);
     } else if (vocabularyData.type === VocabularyType.NOUN) {
       return this.mapNounToCard(vocabularyData as NounData, deckId);
+    } else if (vocabularyData.type === VocabularyType.ADJECTIVE) {
+      return this.mapAdjectiveToCard(vocabularyData as AdjectiveData, deckId);
     }
 
     throw new Error(`Unsupported vocabulary type: ${vocabularyData.type}`);
@@ -45,7 +48,7 @@ export class VocabularyToCardMapper {
     const prompt = verbData.example.join('\n\n');
 
     // Markdown body for question: Just the verb
-    const qMdBody = `**${verbData.word}** (verb)`;
+    const qMdBody = `**${verbData.word}**`;
 
     // Markdown body for answer: Detailed conjugation table
     const aMdBody = this.formatVerbMarkdown(verbData);
@@ -57,9 +60,9 @@ export class VocabularyToCardMapper {
       answer,
       prompt,
       qMdBody,
-      qMdClarifier: 'Translate and conjugate this German verb',
+      qMdClarifier: 'Translate and conjugate',
       qMdFootnote: null,
-      qMdPrompt: 'What is the English translation and conjugation?',
+      qMdPrompt: null,
       aMdBody,
       aMdClarifier: `Translation: ${verbData.translation}`,
       aMdFootnote: null,
@@ -84,7 +87,7 @@ export class VocabularyToCardMapper {
     const prompt = nounData.example.join('\n\n');
 
     // Markdown body for question: Noun with article
-    const qMdBody = `**${nounData.article} ${nounData.word}** (noun)`;
+    const qMdBody = `**${nounData.article} ${nounData.word}**`;
 
     // Markdown body for answer: Translation and plural
     const aMdBody = this.formatNounMarkdown(nounData);
@@ -96,14 +99,129 @@ export class VocabularyToCardMapper {
       answer,
       prompt,
       qMdBody,
-      qMdClarifier: 'Translate this German noun',
+      qMdClarifier: null,
       qMdFootnote: null,
-      qMdPrompt: 'What is the English translation?',
+      qMdPrompt: null,
       aMdBody,
       aMdClarifier: `Article: ${nounData.article}`,
       aMdFootnote: `Plural: ${nounData.plural}`,
       aMdPrompt: nounData.example[0] || null,
     };
+  }
+
+  private mapAdjectiveToCard(
+    adjectiveData: AdjectiveData,
+    deckId: string,
+  ): NewCard {
+    const question = adjectiveData.word;
+    const answer = this.formatAdjectiveAnswer(adjectiveData);
+    const prompt = adjectiveData.example.join('\n\n');
+    const qMdBody = `**${adjectiveData.word}**`;
+    const aMdBody = this.formatAdjectiveMarkdown(adjectiveData);
+
+    return {
+      deckId,
+      name: adjectiveData.word,
+      question,
+      answer,
+      prompt,
+      qMdBody,
+      qMdClarifier: 'Translate and decline',
+      qMdFootnote: null,
+      qMdPrompt: null,
+      aMdBody,
+      aMdClarifier: `Translation: ${adjectiveData.translation}`,
+      aMdFootnote: null,
+      aMdPrompt: adjectiveData.example[0] || null,
+    };
+  }
+
+  // Formatting helpers:
+  private formatAdjectiveAnswer(adjectiveData: AdjectiveData): string {
+    const parts = [
+      `Translation: ${adjectiveData.translation}`,
+      '',
+      `Comparison:`,
+      `  Positive: ${adjectiveData.comparison.positive}`,
+      `  Comparative: ${adjectiveData.comparison.comparative}`,
+      `  Superlative: ${adjectiveData.comparison.superlative}`,
+      '',
+      `Declension: \n ${this.allDeclensionTables(adjectiveData.declension)}`,
+    ];
+    return parts.join('\n');
+  }
+
+  private allDeclensionTables(obj) {
+    return [
+      this.declensionCompact('Strong', obj.strong),
+      this.declensionCompact('Weak', obj.weak),
+      this.declensionCompact('Mixed', obj.mixed),
+    ].join('\n\n');
+  }
+
+  private declensionCompact(title, forms) {
+    const genders = [
+      ['masculine', 'Masc'],
+      ['feminine', 'Fem'],
+      ['neutral', 'Neut'],
+      ['plural', 'Pl'],
+    ];
+    const cases = ['nominative', 'accusative', 'dative', 'genitive'];
+    const caseLabels = {
+      nominative: 'Nom',
+      accusative: 'Acc',
+      dative: 'Dat',
+      genitive: 'Gen',
+    };
+
+    let md = `### ${title}\n\n`;
+
+    for (const [gender, short] of genders) {
+      md += `**${short}:** \n`;
+      md += cases.map((c) => `${forms[`${gender}_${c}`]}`).join('•');
+      md += '  \n';
+    }
+    return md;
+  }
+
+  private declensionTableMarkdown(title, forms) {
+    const genders = ['masculine', 'feminine', 'neutral', 'plural'];
+    const cases = ['nominative', 'genitive', 'dative', 'accusative'];
+
+    let md = `### ${title}\n`;
+    md += `| Gender | ${cases.map((c) => this.capitalize(c)).join(' | ')} |\n`;
+    md += `|--------|${cases.map(() => '------------').join('|')}|\n`;
+
+    for (const gender of genders) {
+      const row = [
+        this.capitalize(gender),
+        ...cases.map((c) => forms[`${gender}_${c}`] || ''),
+      ];
+      md += `| ${row.join(' | ')} |\n`;
+    }
+
+    return md;
+  }
+
+  private capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  private formatAdjectiveMarkdown(adjectiveData: AdjectiveData): string {
+    return `
+### ${adjectiveData.word}
+
+**Translation:** ${adjectiveData.translation}
+
+#### Comparison
+- **Positive:** ${adjectiveData.comparison.positive}
+- **Comparative:** ${adjectiveData.comparison.comparative}
+- **Superlative:** ${adjectiveData.comparison.superlative}
+
+#### Declension Tables
+(nominative, accusative, dative, genitive)
+${this.allDeclensionTables(adjectiveData.declension)}
+  `.trim();
   }
 
   /**

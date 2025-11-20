@@ -15,6 +15,13 @@ export interface VocabularyData {
   type: VocabularyType;
 }
 
+export interface DefaultData extends VocabularyData {
+  type: VocabularyType.UNSET;
+
+  translation: string;
+  example: string[];
+}
+
 /**
  * Interface for verb-specific data
  */
@@ -90,5 +97,22 @@ export interface NounData extends VocabularyData {
   /**
    * Example sentence using the noun in German
    */
+  example: string[];
+}
+
+export interface AdjectiveData extends VocabularyData {
+  word: string;
+  type: VocabularyType.ADJECTIVE;
+  comparison: {
+    positive: string;
+    comparative: string;
+    superlative: string;
+  };
+  declension: {
+    strong: Record<string, string>;
+    weak: Record<string, string>;
+    mixed: Record<string, string>;
+  };
+  translation: string;
   example: string[];
 }

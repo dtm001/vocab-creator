@@ -32,13 +32,10 @@ export abstract class VocabularyBaseHandler implements IVocabularyHandler {
    * @param word - The German word to process
    * @returns Promise resolving to structured vocabulary data
    */
-  async process(word: string): Promise<VocabularyData> {
+  async process(word: string, html: string): Promise<VocabularyData> {
     this.logger.log(`Processing word: ${word}`);
 
     try {
-      // Fetch HTML from dictionary website
-      const html = await this.httpClientService.fetchWordHtml(word);
-
       // Parse the HTML response
       const vocabularyData = this.parseHtmlResponse(html);
 

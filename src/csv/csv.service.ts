@@ -3,7 +3,10 @@ import { createReadStream } from 'fs';
 import { access, constants } from 'fs/promises';
 import csv from 'csv-parser';
 import { VocabularyEntryDto } from '../common/dto/vocabulary-entry.dto';
-import { VocabularyType } from '../common/enum/vocabulary-type.enum';
+import {
+  fromStringToVocabularyTypeEnum,
+  VocabularyType,
+} from '../common/enum/vocabulary-type.enum';
 import { CsvParseException } from './exception/csv-parse.exception';
 import { InvalidCsvFormatException } from './exception/invalid-csv-format.exception';
 
@@ -95,12 +98,12 @@ export class CsvService {
       (key) => key.toLowerCase() === 'word',
     );
 
-    if (!typeKey) {
-      throw new InvalidCsvFormatException(
-        'Missing required column: type',
-        rowNumber,
-      );
-    }
+    // if (!typeKey) {
+    //   throw new InvalidCsvFormatException(
+    //     'Missing required column: type',
+    //     rowNumber,
+    //   );
+    // }
 
     if (!wordKey) {
       throw new InvalidCsvFormatException(
@@ -114,19 +117,19 @@ export class CsvService {
     const word = row[wordKey]?.toString().trim();
 
     // Validate type column
-    if (!type) {
-      throw new InvalidCsvFormatException(
-        'Type column cannot be empty',
-        rowNumber,
-      );
-    }
+    // if (!type) {
+    //   throw new InvalidCsvFormatException(
+    //     'Type column cannot be empty',
+    //     rowNumber,
+    //   );
+    // }
 
-    if (type !== 'verb' && type !== 'noun') {
-      throw new InvalidCsvFormatException(
-        `Invalid type value: '${type}'. Must be 'verb' or 'noun'`,
-        rowNumber,
-      );
-    }
+    // if (type !== 'verb' && type !== 'noun') {
+    //   throw new InvalidCsvFormatException(
+    //     `Invalid type value: '${type}'. Must be 'verb' or 'noun'`,
+    //     rowNumber,
+    //   );
+    // }
 
     // Validate word column
     if (!word) {
@@ -136,8 +139,12 @@ export class CsvService {
       );
     }
 
+    const typeEnum = !typeKey
+      ? VocabularyType.UNSET
+      : fromStringToVocabularyTypeEnum(type);
+
     return {
-      type: type === 'verb' ? VocabularyType.VERB : VocabularyType.NOUN,
+      type: typeEnum,
       word,
       rowNumber,
     };
