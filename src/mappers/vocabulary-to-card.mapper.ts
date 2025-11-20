@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { VocabularyType } from '../common/enum/vocabulary-type.enum';
 import {
   AdjectiveData,
+  DefaultData,
   NounData,
   VerbData,
   VocabularyData,
@@ -26,9 +27,9 @@ export class VocabularyToCardMapper {
       return this.mapNounToCard(vocabularyData as NounData, deckId);
     } else if (vocabularyData.type === VocabularyType.ADJECTIVE) {
       return this.mapAdjectiveToCard(vocabularyData as AdjectiveData, deckId);
+    } else {
+      return this.mapDefaultToCard(vocabularyData as DefaultData, deckId);
     }
-
-    throw new Error(`Unsupported vocabulary type: ${vocabularyData.type}`);
   }
 
   /**
@@ -106,6 +107,45 @@ export class VocabularyToCardMapper {
       aMdClarifier: `Article: ${nounData.article}`,
       aMdFootnote: `Plural: ${nounData.plural}`,
       aMdPrompt: nounData.example[0] || null,
+    };
+  }
+
+  /**
+   * Maps noun data to card format
+   * @param data - Default data
+   * @param deckId - Target deck ID
+   * @returns NewCard object
+   */
+  private mapDefaultToCard(data: DefaultData, deckId: string): NewCard {
+    // Question: German noun with article
+    const question = `${data.word}`;
+
+    // Answer: Translation + plural
+    const answer = this.formatDefaultAnswer(data);
+
+    // Prompt: Example sentences
+    const prompt = data.example.join('\n\n');
+
+    // Markdown body for question: Noun with article
+    const qMdBody = `**${data.word}**`;
+
+    // Markdown body for answer: Translation and plural
+    const aMdBody = this.formatDefaultMarkdown(data);
+
+    return {
+      deckId,
+      name: data.word,
+      question,
+      answer,
+      prompt,
+      qMdBody,
+      qMdClarifier: null,
+      qMdFootnote: null,
+      qMdPrompt: null,
+      aMdBody,
+      aMdClarifier: null,
+      aMdFootnote: null,
+      aMdPrompt: data.example[0] || null,
     };
   }
 
@@ -285,6 +325,15 @@ ${this.allDeclensionTables(adjectiveData.declension)}
   }
 
   /**
+   * Formats noun answer as plain text
+   */
+  private formatDefaultAnswer(data: DefaultData): string {
+    const parts = [`Translation: ${data.translation}`];
+
+    return parts.join('\n');
+  }
+
+  /**
    * Formats noun data as markdown
    */
   private formatNounMarkdown(nounData: NounData): string {
@@ -296,6 +345,16 @@ ${this.allDeclensionTables(adjectiveData.declension)}
 **Article:** ${nounData.article}
 
 **Plural:** ${nounData.plural}
+    `.trim();
+  }
+
+  private formatDefaultMarkdown(data: DefaultData): string {
+    return `
+### ${data.word}
+
+**Translation:** ${data.translation}
+
+**Example:** ${data.example.join('\n ')}
     `.trim();
   }
 
